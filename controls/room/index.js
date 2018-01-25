@@ -1,5 +1,5 @@
 const Room = require('../../models/room')
-const Message = require('../../models/message')
+const MessageController = require('../../controls/message')
 const UserController = require('../../controls/user')
 const Socket = require('../../socket')
 
@@ -25,7 +25,7 @@ class RoomController {
         text: data.text,
         MCreateTime: data.time
       }
-      const msgRes = await Message.saveMsg(saveData)
+      const msgRes = await MessageController.saveMsg(saveData)
       if (msgRes.code === 1) {
         const socketRes = await UserController.getSocketId(saveData.userId)
         if (socketRes.code === 1) {

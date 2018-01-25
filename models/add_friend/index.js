@@ -125,6 +125,18 @@ class AddFriend {
       }
     }
   }
+
+  /**
+   * [ getMsg 查询一条信息 ]
+   * @param [String] fromId 发送者
+   * @param [String] userId 接受者
+   * @returns {Promise.<*>}
+   */
+  static async getMsg (fromId, userId) {
+    const sql = 'SELECT fromId, userId, message, createTime FROM add_friend_message where fromId = ? and userId = ?'
+    const res = await query(sql, [fromId, userId])
+    return res[0]
+  }
 }
 
 module.exports = AddFriend

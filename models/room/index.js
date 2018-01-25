@@ -53,11 +53,13 @@ class Room {
                 ' remark ' +
                 'FROM' +
                 ' room a' +
-                ' LEFT JOIN user b ON FIND_IN_SET( b.wechat_id, a.users ) ' +
-                ' LEFT JOIN friends c on b.wechat_id = c.userId ' +
+                ' LEFT JOIN user b ON FIND_IN_SET( b.wechat_id, a.users )' +
+                ' LEFT JOIN friends c ON c.fromId = ?' +
+                ' AND FIND_IN_SET( c.userId, a.users )' +
                 'WHERE' +
-                ' wechat_id != ?'
-    const res = await query(sql, [wechat_id])
+                ' wechat_id != ?' +
+                ' AND FIND_IN_SET( ?, users )'
+    const res = await query(sql, [wechat_id, wechat_id, wechat_id])
     return res
   }
 }

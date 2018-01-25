@@ -42,6 +42,18 @@ class Message {
       }
     }
   }
+
+  /**
+   * [ readMsg 把消息设置为已读 ]
+   * @param [String] roomId 房间号
+   * @param [String] userId 消息接受者
+   * @returns {Promise.<*>}
+   */
+  static async readMsg (roomId, userId) {
+    const sql = 'update message set isRead = 1 where isRead = 0 and roomId = ? and userId = ?'
+    const res = await query(sql, [roomId, userId])
+    return res
+  }
 }
 
 module.exports = Message

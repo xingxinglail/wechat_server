@@ -1,6 +1,9 @@
 const AddFriend = require('../../models/add_friend')
 const UserController  = require('../../controls/user')
 const Socket = require('../../socket')
+const Room = require('../../models/room')
+const MessageController = require('../../controls/message')
+const moment = require('moment')
 
 class AddFriendController {
   /**
@@ -68,12 +71,62 @@ class AddFriendController {
   static async accept (data) {
     const res = await AddFriend.accept(data.fromId, data.userId)
     if (res.code === 1) {
-      const socketRes = await UserController.getSocketId(data.fromId)
-      if (socketRes.code === 1 && socketRes.data.socketId) {
-        Socket.toMessageBySocketId(socketRes.data.socketId, 'accept', {userId: data.userId})
+      const roomId = await Room.createRoomId() // 创建房间号
+      const newData = {
+        id: roomId,
+        users: `${data.fromId},${data.userId}`
       }
-      return {
-        code: 1
+      const roomRes = await Room.createRoom(newData) // 创建房间
+      if (roomRes.code === 1) {
+        const msgData = await AddFriend.getMsg(data.fromId, data.userId)
+        const saveToUserData = {
+          roomId,
+          fromId: msgData.fromId,
+          userId: msgData.userId,
+          text: msgData.message,
+          MCreateTime: msgData.createTime,
+          isRead: 0
+        }
+        const saveToFromData = {
+          roomId,
+          fromId: msgData.userId,
+          userId: msgData.fromId,
+          text: '我通过了你的朋友验证请求,现在我们可以开始聊天了',
+          MCreateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+          isRead: 0
+        }
+        // 把发起添加请求消息写入message表
+        await MessageController.saveMsg(saveToUserData)
+        // 通过好友验证后把验证消息发送给发起者
+        await MessageController.saveMsg(saveToFromData)
+        // 通知发起者
+        const socketRes = await UserController.getSocketId(data.fromId)
+        if (socketRes.code === 1 && socketRes.data.socketId) {
+          const notification = {
+            nowUserId: data.fromId,
+            userId: data.userId, // 前端添加完成后需要改成当前用户id
+            roomId,
+            fromId: data.userId,
+            text: saveToFromData.text,
+            time: saveToFromData.MCreateTime
+          }
+          Socket.toMessageBySocketId(socketRes.data.socketId, 'accept', notification)
+        }
+        return {
+          code: 1,
+          data: {
+            roomId,
+            userId: data.userId,
+            fromId: data.fromId,
+            text: saveToUserData.text,
+            time: saveToUserData.MCreateTime
+          }
+        }
+      } else {
+        return {
+          code: 0,
+          msg: '房间创建失败'
+        }
       }
     } else {
       return {
